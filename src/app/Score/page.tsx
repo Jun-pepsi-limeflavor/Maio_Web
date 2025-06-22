@@ -9,6 +9,8 @@ export default function MyModelAndStudyConfig() {
   const [batchSize, setBatchSize] = useState('');
   const [learningRate, setLearningRate] = useState('');
   const [testSplit, setTestSplit] = useState('');
+  const [nNeighbor, setNNeighbor] = useState('');
+
 
   const modelList = [
     { id: 'svm', label: 'SVM', description: '분류하는 것에 매우 탁월한 성능을 갖고 있어요' },
@@ -20,21 +22,142 @@ export default function MyModelAndStudyConfig() {
 
   const handleModelSelect = (id: string) => {
     setSelectedModel(id);
+        // 모델 변경 시 이전 값 초기화
+
+    setEpoch('');
+    setBatchSize('');
+    setLearningRate('');
+    setTestSplit('');
+    setNNeighbor('');
   };
 
   const handleStudySubmit = () => {
-    if (!epoch || !batchSize || !learningRate || !testSplit) {
-      alert('모든 값을 입력해주세요!');
-      return;
-    }
-
-    alert(
-      `✨ 선택된 공부법 요약:
+    if (selectedModel === 'knn') {
+      if (!nNeighbor || !batchSize) {
+        alert('N-neighbor와 Batch Size를 모두 입력해주세요!');
+        return;
+      }
+      alert(
+        `✨ 선택된 공부법 요약:
+- N-neighbor: ${nNeighbor}
+- 문제 나누기 단위 (Batch Size): ${batchSize}`
+      );
+    } else if (selectedModel === 'svm') {
+      if (!batchSize) {
+        alert('Batch Size를 입력해주세요!');
+        return;
+      }
+      alert(
+        `✨ 선택된 공부법 요약:
+- 문제 나누기 단위 (Batch Size): ${batchSize}`
+      );
+    } else {
+      if (!epoch || !batchSize || !learningRate || !testSplit) {
+        alert('모든 값을 입력해주세요!');
+        return;
+      }
+      alert(
+        `✨ 선택된 공부법 요약:
 - 반복 학습 횟수 (Epoch): ${epoch}
 - 문제 나누기 단위 (Batch Size): ${batchSize}
 - 학습 속도 (Learning Rate): ${learningRate}
 - 시험 데이터 비율 (%): ${testSplit}`
-    );
+      );
+    }
+  };
+
+
+// 모델별로 입력 폼 다르게 렌더링
+  const renderStudyConfig = () => {
+    if (selectedModel === 'knn') {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">N-neighbor</label>
+            <input
+              type="number"
+              value={nNeighbor}
+              onChange={(e) => setNNeighbor(e.target.value)}
+              placeholder="예: 5"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">문제 단위 (Batch Size)</label>
+            <input
+              type="number"
+              value={batchSize}
+              onChange={(e) => setBatchSize(e.target.value)}
+              placeholder="예: 32"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+        </div>
+      );
+    } else if (selectedModel === 'svm') {
+      return (
+        <div>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">문제 단위 (Batch Size)</label>
+          <input
+            type="number"
+            value={batchSize}
+            onChange={(e) => setBatchSize(e.target.value)}
+            placeholder="예: 32"
+            className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+      );
+    }
+
+    else if (selectedModel) {
+      // GRU, RNN, CNN 등
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">반복 학습 횟수 (Epoch)</label>
+            <input
+              type="number"
+              value={epoch}
+              onChange={(e) => setEpoch(e.target.value)}
+              placeholder="예: 50"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">문제 단위 (Batch Size)</label>
+            <input
+              type="number"
+              value={batchSize}
+              onChange={(e) => setBatchSize(e.target.value)}
+              placeholder="예: 32"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">학습 속도 (Learning Rate)</label>
+            <input
+              type="number"
+              step="0.0001"
+              value={learningRate}
+              onChange={(e) => setLearningRate(e.target.value)}
+              placeholder="예: 0.01"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">시험 데이터 비율 (%)</label>
+            <input
+              type="number"
+              value={testSplit}
+              onChange={(e) => setTestSplit(e.target.value)}
+              placeholder="예: 20"
+              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+        </div>
+      );
+    }
+    return null;
   };
 
   return (
@@ -131,52 +254,7 @@ export default function MyModelAndStudyConfig() {
             예: Epoch는 반복 학습 횟수, Batch Size는 나눠서 공부할 단위, Learning Rate는 공부 속도, Test Split은 시험 문제 비율이에요.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">반복 학습 횟수 (Epoch)</label>
-              <input
-                type="number"
-                value={epoch}
-                onChange={(e) => setEpoch(e.target.value)}
-                placeholder="예: 50"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">문제 단위 (Batch Size)</label>
-              <input
-                type="number"
-                value={batchSize}
-                onChange={(e) => setBatchSize(e.target.value)}
-                placeholder="예: 32"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">학습 속도 (Learning Rate)</label>
-              <input
-                type="number"
-                step="0.0001"
-                value={learningRate}
-                onChange={(e) => setLearningRate(e.target.value)}
-                placeholder="예: 0.01"
-                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">시험 데이터 비율 (%)</label>
-              <input
-                type="number"
-                value={testSplit}
-                onChange={(e) => setTestSplit(e.target.value)}
-                placeholder="예: 20"
-                className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-              />
-            </div>
-          </div>
+          {renderStudyConfig()}
 
           <button
             onClick={handleStudySubmit}
@@ -186,6 +264,7 @@ export default function MyModelAndStudyConfig() {
           </button>
         </div>
       </section>
+      
        {/* Next Step Button */}
        <Link href="/testing">
         <button
