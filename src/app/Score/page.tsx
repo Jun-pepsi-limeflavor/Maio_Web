@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from "next/link";
+import Footer from '../../../component/Footer';
 
 export default function MyModelAndStudyConfig() {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
@@ -177,7 +178,7 @@ export default function MyModelAndStudyConfig() {
           </h1>
           <p className="text-gray-700 mt-3 mb-2">학습할 인공지능 모델을 정하는 과정이에요.</p>
           <p className="text-gray-700 mb-6">
-            학습하고자 하는 모델별로 장점과 단점이 있으니, 학습 시키고 싶은 데이터에 맞맞게 사용하길 추천해요.
+            학습하고자 하는 모델별로 장점과 단점이 있으니, 학습 시키고 싶은 데이터에 알맞게 사용하길 추천해요.
           </p>
 
           <section className="w-full max-w-4xl mx-auto px-4 py-16">
@@ -264,17 +265,23 @@ export default function MyModelAndStudyConfig() {
           </button>
         </div>
       </section>
-      
+
        {/* Next Step Button */}
-       <Link href="/testing">
-        <button
-          type="button"
-          className="text-left bg-green-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-green-600 transition"
-        >
-          다음 단계로 넘어가기
-        </button>
-      </Link>
-      
+      <div className="flex justify-center mt-2 mb-8">
+        <Link href="/testing">
+          <button
+            type="button"
+            className="text-center bg-green-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-green-600 transition"
+          >
+            다음 단계로 넘어가기
+          </button>
+        </Link>
+      </div>
+      {/* Footer의 너비를 메인 div와 동일하게 맞춤 */}
+      <div className="w-full max-w-7xl mx-auto px-6 sm:px-4">
+        <Footer />
+      </div>
     </div>
+    
   );
 }
