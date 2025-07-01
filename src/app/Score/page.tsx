@@ -11,20 +11,18 @@ export default function MyModelAndStudyConfig() {
   const [learningRate, setLearningRate] = useState('');
   const [testSplit, setTestSplit] = useState('');
   const [nNeighbor, setNNeighbor] = useState('');
+  const [serverMessage, setServerMessage] = useState<string>('');
 
-
+  // CNN 모델 제거
   const modelList = [
     { id: 'svm', label: 'SVM', description: '분류하는 것에 매우 탁월한 성능을 갖고 있어요' },
     { id: 'gru', label: 'GRU', description: '시간에 따라 변하는 데이터 예측에 매우 탁월한 성능을 갖고 있어요' },
     { id: 'rnn', label: 'RNN', description: '데이터를 암기를 잘해요! 긴~ 데이터를 사용할 때 유용해요.' },
-    { id: 'cnn', label: 'CNN', description: '가볍고 빠르게 학습해요.' },
     { id: 'knn', label: 'KNN', description: '흩어져 있는 여러 데이터를 모아주는데 매우 탁월한 성능을 갖고 있어요.' }
   ];
 
   const handleModelSelect = (id: string) => {
     setSelectedModel(id);
-        // 모델 변경 시 이전 값 초기화
-
     setEpoch('');
     setBatchSize('');
     setLearningRate('');
@@ -34,23 +32,23 @@ export default function MyModelAndStudyConfig() {
 
   const handleStudySubmit = () => {
     if (selectedModel === 'knn') {
-      if (!nNeighbor || !batchSize) {
-        alert('N-neighbor와 Batch Size를 모두 입력해주세요!');
+      if (!nNeighbor || !testSplit) {
+        alert('N-neighbor와 시험 데이터 비율을 모두 입력해주세요!');
         return;
       }
       alert(
         `✨ 선택된 공부법 요약:
 - N-neighbor: ${nNeighbor}
-- 문제 나누기 단위 (Batch Size): ${batchSize}`
+- 시험 데이터 비율 (%): ${testSplit}`
       );
     } else if (selectedModel === 'svm') {
-      if (!batchSize) {
-        alert('Batch Size를 입력해주세요!');
+      if (!testSplit) {
+        alert('시험 데이터 비율을 입력해주세요!');
         return;
       }
       alert(
         `✨ 선택된 공부법 요약:
-- 문제 나누기 단위 (Batch Size): ${batchSize}`
+- 시험 데이터 비율 (%): ${testSplit}`
       );
     } else {
       if (!epoch || !batchSize || !learningRate || !testSplit) {
@@ -67,51 +65,71 @@ export default function MyModelAndStudyConfig() {
     }
   };
 
-
-// 모델별로 입력 폼 다르게 렌더링
-  const renderStudyConfig = () => {
-    if (selectedModel === 'knn') {
-      return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">N-neighbor</label>
-            <input
-              type="number"
-              value={nNeighbor}
-              onChange={(e) => setNNeighbor(e.target.value)}
-              placeholder="예: 5"
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">문제 단위 (Batch Size)</label>
-            <input
-              type="number"
-              value={batchSize}
-              onChange={(e) => setBatchSize(e.target.value)}
-              placeholder="예: 32"
-              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-        </div>
-      );
-    } else if (selectedModel === 'svm') {
-      return (
-        <div>
-          <label className="block text-sm font-semibold text-gray-700 mb-2">문제 단위 (Batch Size)</label>
-          <input
-            type="number"
-            value={batchSize}
-            onChange={(e) => setBatchSize(e.target.value)}
-            placeholder="예: 32"
-            className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-        </div>
-      );
+  // 모델 서버 전송 함수
+  const handleModelSubmit = async () => {
+    if (!selectedModel) {
+      alert('모델을 선택해주세요!');
+      return;
     }
 
-    else if (selectedModel) {
-      // GRU, RNN, CNN 등
+    // id가 아닌 label(대문자)로 서버에 전송
+    const selectedModelObj = modelList.find(m => m.id === selectedModel);
+    const modelLabel = selectedModelObj ? selectedModelObj.label : selectedModel.toUpperCase();
+
+    // SVM, KNN 구분 메시지 (콘솔)
+    if (modelLabel === 'SVM' || modelLabel === 'KNN') {
+      console.log(`${modelLabel}은(는) 뉴럴 네트워크가 아닙니다.`);
+    } else {
+      console.log(`${modelLabel}은(는) 뉴럴 네트워크 기반 모델입니다.`);
+    }
+
+    try {
+      const response = await fetch('http://127.0.0.1:5000/select_model', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ model: modelLabel }), // 반드시 label(대문자)로!
+      });
+      const data = await response.json();
+      setServerMessage(data.message || data.error || '서버 오류');
+    } catch (err) {
+      setServerMessage('서버 통신 오류');
+    }
+  };
+
+  // 모델별로 입력 폼 다르게 렌더링
+  const renderStudyConfig = () => {
+    if (selectedModel === 'knn' || selectedModel === 'svm') {
+      return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {selectedModel === 'knn' && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">N-neighbor</label>
+              <input
+                type="number"
+                value={nNeighbor}
+                onChange={(e) => setNNeighbor(e.target.value)}
+                placeholder="예: 5"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              />
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">시험 데이터 비율 (%)</label>
+            <input
+              type="number"
+              value={testSplit}
+              onChange={(e) => setTestSplit(e.target.value)}
+              placeholder="예: 20"
+              className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+          </div>
+        </div>
+      );
+    } else if (selectedModel) {
+      // GRU, RNN 등
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
@@ -161,6 +179,45 @@ export default function MyModelAndStudyConfig() {
     return null;
   };
 
+  // 모델별 파라미터 배열 생성 함수 (서버 요구 순서에 맞춤)
+  const getParamsArray = () => {
+    const testSize = testSplit ? Number(testSplit) / 100 : '';
+    if (selectedModel === 'knn') {
+      return [testSize, nNeighbor];
+    } else if (selectedModel === 'svm') {
+      return [testSize, 0];
+    } else if (selectedModel === 'gru' || selectedModel === 'rnn') {
+      return [testSize, batchSize, learningRate, epoch];
+    }
+    return [];
+  };
+
+  // 파라미터 서버 전송 함수
+  const handleParamsSubmit = async () => {
+    const params = getParamsArray();
+
+    // 값이 비어있는지 체크 (if 앞에 괄호 추가)
+    if (params.some(v => v === '' || v === undefined)) {
+      alert('모든 값을 입력해주세요!');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://127.0.0.1:5000/set_params', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ params }),
+      });
+      const data = await response.json();
+      setServerMessage(data.message || data.error || '서버 오류');
+    } catch (err) {
+      setServerMessage('서버 통신 오류');
+    }
+  };
+
   return (
     <div className="w-full max-w-7xl mx-auto px-6 sm:px-4 pt-32 pb-12">
       {/* STEP 3 - 모델 선택 */}
@@ -182,54 +239,54 @@ export default function MyModelAndStudyConfig() {
           </p>
 
           <section className="w-full max-w-4xl mx-auto px-4 py-16">
-  <div className="bg-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200">
-    <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-6">
-      <span className="text-white bg-black rounded-full w-8 h-8 flex items-center justify-center mr-3 text-sm">1</span>
-      원하는 인공지능 모델을 선택하세요!
-    </h2>
+            <div className="bg-gray-50 p-8 rounded-2xl shadow-lg border border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-800 flex items-center mb-6">
+                <span className="text-white bg-black rounded-full w-8 h-8 flex items-center justify-center mr-3 text-sm">1</span>
+                원하는 인공지능 모델을 선택하세요!
+              </h2>
 
-    <p className="text-gray-700 mb-2">⚠️ 딱 하나만 선택할 수 있어요!</p>
-    <p className="text-sm text-gray-500 mb-6">모델을 선택하면, 이 모델을 기준으로 AI가 동작할 거예요.</p>
+              <p className="text-gray-700 mb-2">⚠️ 딱 하나만 선택할 수 있어요!</p>
+              <p className="text-sm text-gray-500 mb-6">모델을 선택하면, 이 모델을 기준으로 AI가 동작할 거예요.</p>
 
-    <div className="space-y-4">
-      {modelList.map((model) => (
-        <label
-          key={model.id}
-          htmlFor={model.id}
-          className="flex items-center p-4 border border-gray-300 rounded-xl hover:border-black transition-all cursor-pointer"
-        >
-          <input
-            type="checkbox"
-            id={model.id}
-            checked={selectedModel === model.id}
-            onChange={() => handleModelSelect(model.id)}
-            className="w-5 h-5 text-black mr-4"
-          />
-          <div>
-            <p className="text-gray-800 font-semibold">{model.label}</p>
-            <p className="text-sm text-gray-500">{model.description}</p>
-          </div>
-        </label>
-      ))}
-    </div>
+              <div className="space-y-4">
+                {modelList.map((model) => (
+                  <label
+                    key={model.id}
+                    htmlFor={model.id}
+                    className="flex items-center p-4 border border-gray-300 rounded-xl hover:border-black transition-all cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      id={model.id}
+                      checked={selectedModel === model.id}
+                      onChange={() => handleModelSelect(model.id)}
+                      className="w-5 h-5 text-black mr-4"
+                    />
+                    <div>
+                      <p className="text-gray-800 font-semibold">{model.label}</p>
+                      <p className="text-sm text-gray-500">{model.description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
 
-    <button
-      type="button"
-      className="mt-8 w-full bg-black text-white font-semibold py-3 rounded-xl hover:bg-gray-800 transition-all"
-      onClick={() => {
-        if (selectedModel) {
-          alert(`선택된 모델: ${selectedModel.toUpperCase()}`);
-        } else {
-          alert('모델을 선택해주세요!');
-        }
-      }}
-    >
-      모델 선정 완료
-    </button>
-  </div>
-</section>
-    </div>
-
+              <button
+                type="button"
+                id="submit-button"
+                className="mt-8 w-full bg-black text-white font-semibold py-3 rounded-xl hover:bg-gray-800 transition-all"
+                onClick={handleModelSubmit}
+              >
+                모델 선정 완료
+              </button>
+              {/* 서버 응답 메시지 표시 */}
+              {serverMessage && (
+                <div id="response-message" className="mt-4 text-center text-green-600 font-semibold">
+                  {serverMessage}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
           <div className="mt-10">
             <img
               src="https://cdn.imweb.me/thumbnail/20240407/c8d48670ddce5.png"
@@ -258,17 +315,23 @@ export default function MyModelAndStudyConfig() {
           {renderStudyConfig()}
 
           <button
-            onClick={handleStudySubmit}
+            onClick={handleParamsSubmit}
             className="mt-8 w-full bg-black text-white font-semibold py-3 rounded-lg hover:bg-gray-800 transition-all"
           >
             공부법 적용하기
           </button>
+          {/* 서버 응답 메시지 표시 */}
+          {serverMessage && (
+            <div id="response-message" className="mt-4 text-center text-green-600 font-semibold">
+              {serverMessage}
+            </div>
+          )}
         </div>
       </section>
 
        {/* Next Step Button */}
       <div className="flex justify-center mt-2 mb-8">
-        <Link href="/testing">
+        <Link href="/train">
           <button
             type="button"
             className="text-center bg-green-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-green-600 transition"

@@ -30,7 +30,17 @@ function toCSV(headers: string[], data: any[]): string {
 }
 
 export default function ImportantDataSection() {
-  const options: string[] = ['최대/최소', '평균값', '중간값', '최빈값', '표준편차', '범위(Range)', 'FFT'];
+  // 기존 options 배열을 "최대", "최소"로 분리
+  const options: string[] = [
+    '최대',      // 0
+    '최소',      // 1
+    '평균값',    // 2
+    '중간값',    // 3
+    '최빈값',    // 4
+    '표준편차',  // 5
+    '범위(Range)', // 6
+    'FFT'        // 7 (별도 처리)
+  ];
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -45,6 +55,7 @@ export default function ImportantDataSection() {
   const [timeWindow, setTimeWindow] = useState(3); // 초 단위
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [step2Alert, setStep2Alert] = useState<string>('');
+  const [isSplitLearningDone, setIsSplitLearningDone] = useState(false);
 
   // 순차적으로 보여줄 인덱스
   const [currentFileIdx, setCurrentFileIdx] = useState(0);
@@ -363,7 +374,7 @@ export default function ImportantDataSection() {
             * 통계 데이터는 중복으로 선택할 수 있어요.
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-            {options.map((option) => (
+            {options.map((option, idx) => (
               <button
                 key={option}
                 type="button"
@@ -372,6 +383,7 @@ export default function ImportantDataSection() {
                 ${selectedOptions.includes(option)
                     ? 'bg-black text-white border-black'
                     : 'bg-white text-gray-800 border-gray-300 hover:bg-gray-100'}`}
+                id={`option${idx}`}
               >
                 {option}
               </button>
@@ -379,10 +391,43 @@ export default function ImportantDataSection() {
           </div>
           <button
             type="button"
-            onClick={() => alert('선택된 통계 옵션: ' + selectedOptions.join(', '))}
+            onClick={async () => {
+              // FFT 인덱스는 7로 변경됨
+              const fftIdx = options.findIndex(opt => opt === 'FFT');
+              let binarySelection = 0;
+              selectedOptions.forEach(opt => {
+                const idx = options.indexOf(opt);
+                if (idx !== -1 && idx !== fftIdx) {
+                  binarySelection |= (1 << idx);
+                }
+              });
+              const fftSelected = selectedOptions.includes('FFT');
+
+              try {
+                const response = await fetch('http://127.0.0.1:5000/set_train', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  credentials: 'include',
+                  body: JSON.stringify({
+                    stat_var: binarySelection,
+                    fft_var: fftSelected,
+                  }),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                  alert(data.message || '서버에 저장되었습니다!');
+                } else {
+                  alert(data.error || '서버 오류');
+                }
+              } catch (err) {
+                alert('서버 통신 오류');
+              }
+            }}
             className="w-full mt-6 bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition"
           >
-            ✅ 선택 완료!
+            ✅ 선택 완료 및 서버로 전송
           </button>
         </div>
 
@@ -394,22 +439,39 @@ export default function ImportantDataSection() {
           <p className="text-gray-500 text-sm">
             * 인공지능을 학습량을 늘리기 위해 한 데이터를 가지고 잘게 나누어서 학습시키도록 할게요!
           </p>
-          <Link href="/important" className="inline-block">
-            <button className="bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition">
-              잘게 나눠서 학습하기
+          <div className="flex justify-start">
+            <button
+              className={
+                isSplitLearningDone
+                  ? "bg-green-500 text-white px-6 py-3 rounded-lg font-semibold cursor-default"
+                  : "bg-black text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition"
+              }
+              disabled={isSplitLearningDone}
+              onClick={() => setIsSplitLearningDone(true)}
+              type="button"
+            >
+              {isSplitLearningDone
+                ? "잘게 나누어 학습합니다!"
+                : "잘게 나눠서 학습하기"}
             </button>
-          </Link>
+          </div>
         </div>
 
         {/* Next Step Button */}
-        <Link href="/Score">
+        <div className="flex justify-center w-full">
           <button
             type="button"
-            className="bg-green-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-green-600 transition"
+            className={`bg-green-500 text-white font-semibold px-6 py-3 rounded-lg hover:bg-green-600 transition ${!isSplitLearningDone ? 'opacity-50 cursor-not-allowed' : ''}`}
+            disabled={!isSplitLearningDone}
+            onClick={() => {
+              if (isSplitLearningDone) {
+                window.location.href = "/Score";
+              }
+            }}
           >
             다음 단계로 넘어가기
           </button>
-        </Link>
+        </div>
       </div>
       <Footer />
     </div>
