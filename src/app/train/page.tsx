@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import Footer from '../../../component/Footer';
 
 export default function TestingPage() {
   const [isTraining, setIsTraining] = useState(false);
@@ -14,10 +13,9 @@ export default function TestingPage() {
     setLogs([]);
     setIsCompleted(false);
 
-    // 서버 SSE 연결
-    const eventSource = new EventSource('http://127.0.0.1:5000/train_data', { withCredentials: true } as any);
+    const eventSource = new EventSource('http://127.0.0.1:5000/train_data', { withCredentials: true } as unknown as EventSourceInit);
 
-    eventSource.onmessage = (event) => {
+    eventSource.onmessage = (event: MessageEvent) => {
       if (event.data === 'Training completed.') {
         setIsCompleted(true);
         setIsTraining(false);

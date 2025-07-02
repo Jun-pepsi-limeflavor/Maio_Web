@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from "next/link";
 import Footer from '../../../component/Footer';
+import Image from 'next/image';
 
 export default function MyModelAndStudyConfig() {
   const [selectedModel, setSelectedModel] = useState<string | null>(null);
@@ -13,7 +14,6 @@ export default function MyModelAndStudyConfig() {
   const [nNeighbor, setNNeighbor] = useState('');
   const [serverMessage, setServerMessage] = useState<string>('');
 
-  // CNN 모델 제거
   const modelList = [
     { id: 'svm', label: 'SVM', description: '분류하는 것에 매우 탁월한 성능을 갖고 있어요' },
     { id: 'gru', label: 'GRU', description: '시간에 따라 변하는 데이터 예측에 매우 탁월한 성능을 갖고 있어요' },
@@ -30,58 +30,13 @@ export default function MyModelAndStudyConfig() {
     setNNeighbor('');
   };
 
-  const handleStudySubmit = () => {
-    if (selectedModel === 'knn') {
-      if (!nNeighbor || !testSplit) {
-        alert('N-neighbor와 시험 데이터 비율을 모두 입력해주세요!');
-        return;
-      }
-      alert(
-        `✨ 선택된 공부법 요약:
-- N-neighbor: ${nNeighbor}
-- 시험 데이터 비율 (%): ${testSplit}`
-      );
-    } else if (selectedModel === 'svm') {
-      if (!testSplit) {
-        alert('시험 데이터 비율을 입력해주세요!');
-        return;
-      }
-      alert(
-        `✨ 선택된 공부법 요약:
-- 시험 데이터 비율 (%): ${testSplit}`
-      );
-    } else {
-      if (!epoch || !batchSize || !learningRate || !testSplit) {
-        alert('모든 값을 입력해주세요!');
-        return;
-      }
-      alert(
-        `✨ 선택된 공부법 요약:
-- 반복 학습 횟수 (Epoch): ${epoch}
-- 문제 나누기 단위 (Batch Size): ${batchSize}
-- 학습 속도 (Learning Rate): ${learningRate}
-- 시험 데이터 비율 (%): ${testSplit}`
-      );
-    }
-  };
-
-  // 모델 서버 전송 함수
   const handleModelSubmit = async () => {
     if (!selectedModel) {
       alert('모델을 선택해주세요!');
       return;
     }
-
-    // id가 아닌 label(대문자)로 서버에 전송
     const selectedModelObj = modelList.find(m => m.id === selectedModel);
     const modelLabel = selectedModelObj ? selectedModelObj.label : selectedModel.toUpperCase();
-
-    // SVM, KNN 구분 메시지 (콘솔)
-    if (modelLabel === 'SVM' || modelLabel === 'KNN') {
-      console.log(`${modelLabel}은(는) 뉴럴 네트워크가 아닙니다.`);
-    } else {
-      console.log(`${modelLabel}은(는) 뉴럴 네트워크 기반 모델입니다.`);
-    }
 
     try {
       const response = await fetch('http://127.0.0.1:5000/select_model', {
@@ -90,16 +45,15 @@ export default function MyModelAndStudyConfig() {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify({ model: modelLabel }), // 반드시 label(대문자)로!
+        body: JSON.stringify({ model: modelLabel }),
       });
       const data = await response.json();
       setServerMessage(data.message || data.error || '서버 오류');
-    } catch (err) {
+    } catch {
       setServerMessage('서버 통신 오류');
     }
   };
 
-  // 모델별로 입력 폼 다르게 렌더링
   const renderStudyConfig = () => {
     if (selectedModel === 'knn' || selectedModel === 'svm') {
       return (
@@ -110,7 +64,7 @@ export default function MyModelAndStudyConfig() {
               <input
                 type="number"
                 value={nNeighbor}
-                onChange={(e) => setNNeighbor(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNNeighbor(e.target.value)}
                 placeholder="예: 5"
                 className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
               />
@@ -121,7 +75,7 @@ export default function MyModelAndStudyConfig() {
             <input
               type="number"
               value={testSplit}
-              onChange={(e) => setTestSplit(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestSplit(e.target.value)}
               placeholder="예: 20"
               className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
@@ -129,7 +83,6 @@ export default function MyModelAndStudyConfig() {
         </div>
       );
     } else if (selectedModel) {
-      // GRU, RNN 등
       return (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
@@ -137,7 +90,7 @@ export default function MyModelAndStudyConfig() {
             <input
               type="number"
               value={epoch}
-              onChange={(e) => setEpoch(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEpoch(e.target.value)}
               placeholder="예: 50"
               className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
@@ -147,7 +100,7 @@ export default function MyModelAndStudyConfig() {
             <input
               type="number"
               value={batchSize}
-              onChange={(e) => setBatchSize(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setBatchSize(e.target.value)}
               placeholder="예: 32"
               className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
@@ -158,7 +111,7 @@ export default function MyModelAndStudyConfig() {
               type="number"
               step="0.0001"
               value={learningRate}
-              onChange={(e) => setLearningRate(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLearningRate(e.target.value)}
               placeholder="예: 0.01"
               className="w-full px-4 py-3 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
@@ -168,7 +121,7 @@ export default function MyModelAndStudyConfig() {
             <input
               type="number"
               value={testSplit}
-              onChange={(e) => setTestSplit(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestSplit(e.target.value)}
               placeholder="예: 20"
               className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
@@ -179,26 +132,35 @@ export default function MyModelAndStudyConfig() {
     return null;
   };
 
-  // 모델별 파라미터 배열 생성 함수 (서버 요구 순서에 맞춤)
   const getParamsArray = () => {
-    const testSize = testSplit ? Number(testSplit) / 100 : '';
+    const testSize = testSplit ? parseFloat(testSplit) / 100 : '';
+    const batch = batchSize ? parseInt(batchSize, 10) : '';
+    const lr = learningRate ? parseFloat(learningRate) : '';
+    const ep = epoch ? parseInt(epoch, 10) : '';
+    const nNeigh = nNeighbor ? parseInt(nNeighbor, 10) : '';
+
     if (selectedModel === 'knn') {
-      return [testSize, nNeighbor];
+      return [testSize, nNeigh];
     } else if (selectedModel === 'svm') {
       return [testSize, 0];
     } else if (selectedModel === 'gru' || selectedModel === 'rnn') {
-      return [testSize, batchSize, learningRate, epoch];
+      return [testSize, batch, lr, ep];
     }
     return [];
   };
 
-  // 파라미터 서버 전송 함수
   const handleParamsSubmit = async () => {
     const params = getParamsArray();
 
-    // 값이 비어있는지 체크 (if 앞에 괄호 추가)
-    if (params.some(v => v === '' || v === undefined)) {
-      alert('모든 값을 입력해주세요!');
+    // 값이 비어있거나, batchSize가 1 미만이거나 정수가 아니면 경고
+    if (
+      params.some(v => v === '' || v === undefined) ||
+      (
+        (selectedModel === 'gru' || selectedModel === 'rnn') &&
+        (Number(params[1]) < 1 || !Number.isInteger(Number(params[1])))
+      )
+    ) {
+      alert('모든 값을 올바르게 입력해주세요! (Batch Size는 1 이상의 정수여야 합니다)');
       return;
     }
 
@@ -213,7 +175,7 @@ export default function MyModelAndStudyConfig() {
       });
       const data = await response.json();
       setServerMessage(data.message || data.error || '서버 오류');
-    } catch (err) {
+    } catch {
       setServerMessage('서버 통신 오류');
     }
   };
@@ -287,15 +249,17 @@ export default function MyModelAndStudyConfig() {
             </div>
           </section>
         </div>
-          <div className="mt-10">
-            <img
-              src="https://cdn.imweb.me/thumbnail/20240407/c8d48670ddce5.png"
-              alt="플로깅 이미지"
-              className="rounded-xl shadow-md"
-            />
-          </div>
+        <div className="mt-10">
+          <Image
+            src="https://cdn.imweb.me/thumbnail/20240407/c8d48670ddce5.png"
+            alt="플로깅 이미지"
+            width={800}
+            height={400}
+            className="rounded-xl shadow-md"
+          />
         </div>
-     
+      </div>
+
 
       {/* STEP 4 - 모델 학습 설정 */}
       <section className="w-full max-w-4xl mx-auto px-4 py-16">

@@ -1,6 +1,4 @@
-import { NextRequest } from 'next/server';
-
-export async function GET(request: NextRequest) {
+export async function GET() {
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
     async start(controller) {

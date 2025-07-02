@@ -1,19 +1,19 @@
 'use client';
 
-import Image from 'next/image'
-import Link from "next/link";
+import Image from 'next/image';
 import Footer from "../../../component/Footer";
 import React, { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 // CSV 파싱 함수
-function parseCSV(text: string): { headers: string[], rows: any[] } {
+function parseCSV(text: string): { headers: string[], rows: Record<string, string | number>[] } {
   const lines = text.trim().split('\n');
   const headers = lines[0].split(',').map(h => h.trim());
   const rows = lines.slice(1).map(line => {
     const values = line.split(',').map(cell => cell.trim());
-    const obj: any = {};
+    const obj: Record<string, string | number> = {};
     headers.forEach((h, i) => {
+      // string | number로 명확히 지정
       obj[h] = isNaN(Number(values[i])) ? values[i] : Number(values[i]);
     });
     return obj;
@@ -22,7 +22,7 @@ function parseCSV(text: string): { headers: string[], rows: any[] } {
 }
 
 // CSV를 다시 문자열로 변환
-function toCSV(headers: string[], data: any[]): string {
+function toCSV(headers: string[], data: Record<string, unknown>[]): string {
   return [
     headers.join(','),
     ...data.map(row => headers.map(h => row[h]).join(','))
@@ -48,8 +48,8 @@ export default function ImportantDataSection() {
   const [isEdgeEdited, setIsEdgeEdited] = useState(false);
 
   // STEP 2-2 관련 state
-  const [fileCharts, setFileCharts] = useState<{ name: string, headers: string[], rows: any[] }[]>([]);
-  const [highlighted, setHighlighted] = useState<{ [fileName: string]: { start: number, end: number, data: any[] } | null }>({});
+  const [fileCharts, setFileCharts] = useState<{ name: string, headers: string[], rows: Record<string, number | string>[] }[]>([]);
+  const [highlighted, setHighlighted] = useState<{ [fileName: string]: { start: number, end: number, data: Record<string, number | string>[] } | null }>({});
   const [uploadResult, setUploadResult] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [timeWindow, setTimeWindow] = useState(3); // 초 단위
@@ -83,7 +83,7 @@ export default function ImportantDataSection() {
       return;
     }
     setStep2Alert('');
-    const charts: { name: string, headers: string[], rows: any[] }[] = [];
+    const charts: { name: string, headers: string[], rows: Record<string, number | string>[] }[] = [];
     let filesRead = 0;
     const filesArr = Array.from(files);
     filesArr.forEach((file, idx) => {
@@ -91,7 +91,7 @@ export default function ImportantDataSection() {
       reader.onload = (e) => {
         const text = e.target?.result as string;
         const { headers, rows } = parseCSV(text);
-        charts[idx] = { name: file.name, headers, rows }; // 순서 보장
+        charts[idx] = { name: file.name, headers, rows };
         filesRead++;
         if (filesRead === filesArr.length) {
           setFileCharts(charts);
@@ -110,7 +110,7 @@ export default function ImportantDataSection() {
     const file = fileCharts[fileIdx];
     if (!file) return;
     const xCol = file.headers[0];
-    const startIdx = file.rows.findIndex(row => row[xCol] >= clickedX);
+    const startIdx = file.rows.findIndex(row => Number(row[xCol]) >= clickedX);
     if (startIdx === -1) return;
 
     // 규격화: timeWindow * 100개 행
@@ -135,8 +135,8 @@ export default function ImportantDataSection() {
     setHighlighted(prev => ({
       ...prev,
       [file.name]: {
-        start: file.rows[actualStart][xCol],
-        end: file.rows[actualEnd - 1][xCol],
+        start: Number(file.rows[actualStart][xCol]),
+        end: Number(file.rows[actualEnd - 1][xCol]),
         data: filtered
       }
     }));
@@ -198,14 +198,17 @@ export default function ImportantDataSection() {
       } else {
         setUploadResult(`오류: ${data.error || data.message}`);
       }
-    } catch (err) {
+    } catch {
       setUploadResult('파일 업로드 중 오류가 발생했습니다.');
     }
     setIsUploading(false);
   };
 
   // 차트 렌더링 (하나씩만)
-  const renderChartForFile = (file: { name: string, headers: string[], rows: any[] }, fileIdx: number) => {
+  const renderChartForFile = (
+    file: { name: string; headers: string[]; rows: Record<string, number | string>[] },
+    fileIdx: number
+  ) => {
     const xKey = file.headers[0];
     const yKeys = file.headers.slice(1);
     return (
@@ -214,9 +217,11 @@ export default function ImportantDataSection() {
         <ResponsiveContainer width="100%" height={300}>
           <LineChart
             data={file.rows}
-            onClick={(e: any) => {
-              if (e && e.activeLabel !== undefined) {
-                handleChartClick(fileIdx, e.activeLabel);
+            onClick={(e) => {
+              // activeLabel이 string일 수 있으므로 number로 변환
+              const label = e && e.activeLabel !== undefined ? Number(e.activeLabel) : undefined;
+              if (label !== undefined && !isNaN(label)) {
+                handleChartClick(fileIdx, label);
               }
             }}
           >
@@ -338,7 +343,7 @@ export default function ImportantDataSection() {
           {errorMsg && (
             <div className="mb-4 text-red-600 font-semibold">{errorMsg}</div>
           )}
-          {/* 순차적으로 하나씩만 그래프를 보여줌 */}
+          {/* 순차적으로 하나씩 그래프를 보여줌 */}
           {fileCharts.length > 0 && currentFileIdx < fileCharts.length && (
             <div className="w-full">
               {renderChartForFile(fileCharts[currentFileIdx], currentFileIdx)}
@@ -421,7 +426,7 @@ export default function ImportantDataSection() {
                 } else {
                   alert(data.error || '서버 오류');
                 }
-              } catch (err) {
+              } catch {
                 alert('서버 통신 오류');
               }
             }}
