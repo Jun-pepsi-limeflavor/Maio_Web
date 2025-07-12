@@ -1,11 +1,12 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import { API_BASE_URL } from '../../utils/fetcher';
 
 // 라벨 제출 API
 export async function POST(req: NextApiRequest, res: NextApiResponse) {
   try {
     const { labels } = req.body;
 
-    const response = await fetch('http://127.0.0.1:5000/submit-labels', {
+    const response = await fetch(`${API_BASE_URL}/submit-labels`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -27,7 +28,7 @@ export async function GET(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('Connection', 'keep-alive');
 
   try {
-    const response = await fetch('http://127.0.0.1:5000/train_data');
+    const response = await fetch(`${API_BASE_URL}/train_data`);
     const reader = response.body?.getReader();
 
     while (true) {
@@ -48,7 +49,7 @@ export async function GET(req: NextApiRequest, res: NextApiResponse) {
 // 초기화 API
 export async function initialize(req: NextApiRequest, res: NextApiResponse) {
   try {
-    const response = await fetch('http://127.0.0.1:5000/initialize');
+    const response = await fetch(`${API_BASE_URL}/initialize`);
     const data = await response.json();
     return res.status(200).json({ client_id: data.client_id });
   } catch (error) {
