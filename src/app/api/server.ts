@@ -20,33 +20,6 @@ export async function POST(req: NextApiRequest, res: NextApiResponse) {
   }
 }
 
-// // 파일 업로드 API
-// export async function uploadHandler(req: NextApiRequest, res: NextApiResponse) {
-//   try {
-//     const formData = await req.formData();
-//     const file = formData.get('file');
-
-//     if (!file) {
-//       return res.status(400).json({ success: false, message: '파일이 없습니다.' });
-//     }
-
-//     // Flask 서버로 파일 전송
-//     const response = await fetch('http://127.0.0.1:5000/input_npy_data', {
-//       method: 'POST',
-//       body: formData,
-//     });
-
-//     const data = await response.json();
-//     return res.status(200).json({
-//       success: true,
-//       total_count: data.total_count,
-//     });
-//   } catch (error) {
-//     console.error('Error:', error);
-//     return res.status(500).json({ success: false, message: '파일 업로드 중 오류가 발생했습니다.' });
-//   }
-// }
-
 // 학습 시작 API (Server-Sent Events)
 export async function GET(req: NextApiRequest, res: NextApiResponse) {
   res.setHeader('Content-Type', 'text/event-stream');
